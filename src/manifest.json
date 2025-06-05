@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "メルカリ通報支援",
+  "version": "0.1.0",
+  "description": "メルカリで禁止されている商品を簡単に通報するための支援ツール",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*.mercari.com/*",
+    "https://jp.mercari.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.mercari.com/*",
+        "https://jp.mercari.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
