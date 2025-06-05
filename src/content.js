@@ -295,9 +295,69 @@ function submitReport() {
   }
   
   // 通報処理の実行
-  // 実際のメルカリの通報ボタンをクリック
-  const reportButton = document.querySelector('[data-testid="report-button"]') || 
-                      document.querySelector('.item-action-button');
+  console.log('通報処理を開始します...');
+  
+  // 実際のメルカリの通報ボタンをクリック（複数のセレクターを試す）
+  let reportButton = null;
+  
+  // 通報ボタンの可能性があるセレクターを順番に試す
+  const reportButtonSelectors = [
+    // aria-labelやtitleで識別
+    '[aria-label*="報告"]',
+    '[aria-label*="通報"]',
+    '[title*="報告"]',
+    '[title*="通報"]',
+    // 従来のセレクター
+    '[data-testid="report-button"]',
+    '.item-action-button',
+    // その他の可能性
+    '.item-detail-action button',
+    '.product-action button',
+    // 基本的なボタンとリンク
+    'button',
+    'a[role="button"]',
+    'div[role="button"]'
+  ];
+  
+  // 各セレクターを試して、最初に見つかった要素を使用
+  for (const selector of reportButtonSelectors) {
+    try {
+      const elements = document.querySelectorAll(selector);
+      // 複数の要素が見つかった場合は、アイコンの形状や位置で判断
+      for (const element of elements) {
+        // SVGアイコンを含む場合は、pathの形状をチェック
+        const svg = element.querySelector('svg');
+        if (svg) {
+          const paths = svg.querySelectorAll('path');
+          // 通報アイコンらしい形状（フラグや感嘆符など）を持つかチェック
+          if (paths.length > 0) {
+            // 要素が表示されているかチェック
+            const rect = element.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+              reportButton = element;
+              console.log('通報ボタンを発見:', selector);
+              break;
+            }
+          }
+        } else if (element.textContent && 
+                  (element.textContent.includes('報告') || 
+                   element.textContent.includes('通報'))) {
+          // テキストベースのボタン
+          reportButton = element;
+          console.log('通報ボタンを発見:', selector);
+          break;
+        }
+      }
+      if (reportButton) break;
+    } catch (e) {
+      // セレクターエラーは無視
+      console.error(`セレクターエラー (${selector}):`, e);
+    }
+  }
+  
+  // デバッグ: 見つかった全てのボタンを表示
+  console.log('ページ上の全ボタン数:', document.querySelectorAll('button').length);
+  console.log('ページ上の全SVG数:', document.querySelectorAll('svg').length);
   
   if (reportButton) {
     // モーダルを閉じる
@@ -308,40 +368,95 @@ function submitReport() {
     
     // 少し待ってからメルカリの通報モーダルが表示されるのを待つ
     setTimeout(() => {
-      // 禁止されている出品物を選択
-      const prohibitedItemOption = document.querySelector('input[value="prohibited_item"]');
+      // 通報モーダルが表示されているか確認
+      const modal = document.querySelector('[role="dialog"]') || 
+                    document.querySelector('.modal') ||
+                    document.querySelector('[data-testid*="modal"]');
+      
+      if (!modal) {
+        showNotification('通報モーダルが表示されませんでした。手動で通報してください。', true);
+        return;
+      }
+      
+      // 禁止されている出品物を選択（複数のセレクターを試す）
+      let prohibitedItemOption = document.querySelector('input[value="prohibited_item"]') ||
+                                 document.querySelector('input[value="prohibited"]') ||
+                                 document.querySelector('input[type="radio"][name*="report"]');
+      
+      // ラベルテキストから探す
+      if (!prohibitedItemOption) {
+        const labels = document.querySelectorAll('label');
+        for (const label of labels) {
+          if (label.textContent.includes('禁止') || 
+              label.textContent.includes('prohibited')) {
+            const input = label.querySelector('input[type="radio"]') ||
+                         document.querySelector(`input[id="${label.getAttribute('for')}"]`);
+            if (input) {
+              prohibitedItemOption = input;
+              break;
+            }
+          }
+        }
+      }
+      
       if (prohibitedItemOption) {
         prohibitedItemOption.click();
+        // クリックイベントを確実に発火
+        prohibitedItemOption.dispatchEvent(new Event('change', { bubbles: true }));
         
         // サブカテゴリの選択（その他不適切と判断されるもの）
         setTimeout(() => {
-          const otherInappropriateOption = document.querySelector('input[value="other_inappropriate"]');
+          let otherInappropriateOption = document.querySelector('input[value="other_inappropriate"]') ||
+                                        document.querySelector('input[value="other"]');
+          
+          // ラベルテキストから探す
+          if (!otherInappropriateOption) {
+            const labels = document.querySelectorAll('label');
+            for (const label of labels) {
+              if (label.textContent.includes('その他') || 
+                  label.textContent.includes('other') ||
+                  label.textContent.includes('不適切')) {
+                const input = label.querySelector('input[type="radio"]') ||
+                             document.querySelector(`input[id="${label.getAttribute('for')}"]`);
+                if (input && input.name && input.name !== prohibitedItemOption.name) {
+                  otherInappropriateOption = input;
+                  break;
+                }
+              }
+            }
+          }
+          
           if (otherInappropriateOption) {
             otherInappropriateOption.click();
+            otherInappropriateOption.dispatchEvent(new Event('change', { bubbles: true }));
             
             // 詳細理由の入力
             setTimeout(() => {
-              const reasonTextarea = document.querySelector('textarea[name="reason"]');
+              const reasonTextarea = document.querySelector('textarea[name="reason"]') ||
+                                    document.querySelector('textarea[name*="detail"]') ||
+                                    document.querySelector('textarea[placeholder*="理由"]') ||
+                                    document.querySelector('textarea');
+                                    
               if (reasonTextarea) {
                 reasonTextarea.value = detailText;
                 
                 // 入力イベントを発火させる
-                const event = new Event('input', { bubbles: true });
-                reasonTextarea.dispatchEvent(event);
+                reasonTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+                reasonTextarea.dispatchEvent(new Event('change', { bubbles: true }));
                 
                 showNotification('通報理由を入力しました。「事務局に報告する」ボタンを押して完了してください。');
               } else {
-                showNotification('詳細理由の入力欄が見つかりませんでした。', true);
+                showNotification('詳細理由の入力欄が見つかりませんでした。手動で入力してください。', true);
               }
-            }, 300);
+            }, 500);
           } else {
-            showNotification('サブカテゴリの選択肢が見つかりませんでした。', true);
+            showNotification('サブカテゴリの選択肢が見つかりませんでした。手動で選択してください。', true);
           }
-        }, 300);
+        }, 500);
       } else {
-        showNotification('通報カテゴリの選択肢が見つかりませんでした。', true);
+        showNotification('通報カテゴリの選択肢が見つかりませんでした。手動で選択してください。', true);
       }
-    }, 500);
+    }, 1000);
   } else {
     showNotification('通報ボタンが見つかりませんでした。', true);
   }

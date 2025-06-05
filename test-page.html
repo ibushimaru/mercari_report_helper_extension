@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>拡張機能テストページ</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .product-page {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .product-info {
+            margin-bottom: 20px;
+        }
+        .product-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .product-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .action-button {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .action-button:hover {
+            background: #f5f5f5;
+        }
+        .report-button {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            width: 500px;
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .modal h2 {
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: #ff0211;
+            color: white;
+        }
+        .btn-secondary {
+            background: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="product-page">
+        <div class="product-info">
+            <div class="product-title">Nintendo Switch 2 テスト商品</div>
+            <div>価格: ¥50,000</div>
+            <div>出品者: テストユーザー</div>
+        </div>
+        
+        <div class="product-actions">
+            <button class="action-button">いいね!</button>
+            <button class="action-button">コメント</button>
+            <button class="action-button report-button" aria-label="不適切な商品の報告" onclick="openReportModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M3 21V8L12 3L13.4 4.4L12.4 9H21V13L17.5 21H3Z" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                <span>報告</span>
+            </button>
+        </div>
+    </div>
+    
+    <div id="reportModal" class="modal" role="dialog">
+        <div class="modal-content">
+            <h2>不適切な商品の報告</h2>
+            
+            <div class="form-group">
+                <label>
+                    <input type="radio" name="report-type" value="prohibited_item">
+                    禁止されている出品物
+                </label>
+                <label>
+                    <input type="radio" name="report-type" value="counterfeit">
+                    偽ブランド品
+                </label>
+                <label>
+                    <input type="radio" name="report-type" value="inappropriate">
+                    その他不適切な出品
+                </label>
+            </div>
+            
+            <div class="form-group" id="subcategory" style="display:none;">
+                <label>
+                    <input type="radio" name="subcategory" value="other_inappropriate">
+                    その他不適切と判断されるもの
+                </label>
+            </div>
+            
+            <div class="form-group">
+                <label for="reason">詳細理由</label>
+                <textarea id="reason" name="reason" rows="5" placeholder="報告の詳細理由を入力してください"></textarea>
+            </div>
+            
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeReportModal()">キャンセル</button>
+                <button class="btn btn-primary" onclick="submitReport()">事務局に報告する</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function openReportModal() {
+            document.getElementById('reportModal').style.display = 'block';
+        }
+        
+        function closeReportModal() {
+            document.getElementById('reportModal').style.display = 'none';
+        }
+        
+        function submitReport() {
+            alert('報告が送信されました（テスト）');
+            closeReportModal();
+        }
+        
+        // ラジオボタンの変更を監視
+        document.querySelectorAll('input[name="report-type"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'prohibited_item') {
+                    document.getElementById('subcategory').style.display = 'block';
+                } else {
+                    document.getElementById('subcategory').style.display = 'none';
+                }
+            });
+        });
+        
+        // テスト用: ページロード後に拡張機能が動作することを確認
+        window.addEventListener('load', () => {
+            console.log('テストページが読み込まれました');
+            // 拡張機能がボタンを追加したかチェック
+            setTimeout(() => {
+                const helperButton = document.querySelector('.mercari-report-helper-button');
+                if (helperButton) {
+                    console.log('✓ 拡張機能のボタンが追加されました');
+                } else {
+                    console.log('✗ 拡張機能のボタンが見つかりません');
+                }
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

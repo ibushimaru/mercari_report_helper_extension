@@ -1,0 +1,32 @@
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test results
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Generated files
+*.html
+!src/*.html
+!test-page.html
+mercari-*.png
+mercari-*.html
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Package lock files (optional - you may want to keep these)
+# package-lock.json
+# yarn.lock
